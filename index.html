@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Product Intelligence & Customer Voice Dashboard</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+
+  <!-- Custom styles -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="bg-gray-50 text-gray-800 min-h-screen">
+
+  <!-- ===== HEADER ===== -->
+  <header class="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-30">
+    <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+      <div>
+        <h1 class="text-xl sm:text-2xl font-bold text-indigo-700 leading-tight">
+          📊 Product Intelligence &amp; Customer Voice Dashboard
+        </h1>
+        <p class="text-xs sm:text-sm text-gray-500 mt-0.5">
+          Analisis performa produk &amp; suara pelanggan · Dataset sintetis untuk demonstrasi · 600 ulasan
+        </p>
+      </div>
+      <div class="text-xs text-gray-400 sm:text-right">
+        <span id="lastUpdated"></span>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-screen-2xl mx-auto px-4 sm:px-6 py-6 space-y-8">
+
+    <!-- ===== FILTER PANEL ===== -->
+    <section id="filterPanel" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">🔍 Filter &amp; Pencarian</h2>
+        <button id="btnResetFilter" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium transition">Reset Filter</button>
+      </div>
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <!-- Kategori -->
+        <div>
+          <label class="filter-label">Kategori</label>
+          <select id="filterCategory" class="filter-select">
+            <option value="">Semua</option>
+          </select>
+        </div>
+        <!-- Produk -->
+        <div>
+          <label class="filter-label">Produk</label>
+          <select id="filterProduct" class="filter-select">
+            <option value="">Semua</option>
+          </select>
+        </div>
+        <!-- Wilayah -->
+        <div>
+          <label class="filter-label">Wilayah</label>
+          <select id="filterRegion" class="filter-select">
+            <option value="">Semua</option>
+          </select>
+        </div>
+        <!-- Sentimen -->
+        <div>
+          <label class="filter-label">Sentimen</label>
+          <select id="filterSentiment" class="filter-select">
+            <option value="">Semua</option>
+            <option value="Positive">Positive</option>
+            <option value="Neutral">Neutral</option>
+            <option value="Negative">Negative</option>
+          </select>
+        </div>
+        <!-- Status Pesanan -->
+        <div>
+          <label class="filter-label">Status Pesanan</label>
+          <select id="filterStatus" class="filter-select">
+            <option value="">Semua</option>
+            <option value="Delivered">Delivered</option>
+            <option value="Processing">Processing</option>
+            <option value="Cancelled">Cancelled</option>
+          </select>
+        </div>
+        <!-- Pencarian Teks -->
+        <div>
+          <label class="filter-label">Cari Ulasan</label>
+          <input id="searchText" type="text" placeholder="Kata kunci..." class="filter-select" />
+        </div>
+      </div>
+      <!-- Date Range -->
+      <div class="grid grid-cols-2 gap-3 mt-3 max-w-xs">
+        <div>
+          <label class="filter-label">Dari Tanggal</label>
+          <input id="filterDateFrom" type="date" class="filter-select" />
+        </div>
+        <div>
+          <label class="filter-label">Sampai Tanggal</label>
+          <input id="filterDateTo" type="date" class="filter-select" />
+        </div>
+      </div>
+      <p class="text-xs text-gray-400 mt-3" id="filterSummary">Menampilkan semua 600 ulasan</p>
+    </section>
+
+    <!-- ===== KPI CARDS ===== -->
+    <section>
+      <h2 class="section-title">📌 Ringkasan KPI</h2>
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div class="kpi-card">
+          <p class="kpi-label">Total Ulasan</p>
+          <p id="kpiTotalReviews" class="kpi-value text-indigo-600">—</p>
+        </div>
+        <div class="kpi-card">
+          <p class="kpi-label">Total Transaksi (Delivered)</p>
+          <p id="kpiTotalRevenue" class="kpi-value text-emerald-600">—</p>
+        </div>
+        <div class="kpi-card">
+          <p class="kpi-label">Rata-rata Rating</p>
+          <p id="kpiAvgRating" class="kpi-value text-amber-500">—</p>
+        </div>
+        <div class="kpi-card sentiment-pos">
+          <p class="kpi-label">Sentimen Positif</p>
+          <p id="kpiPositive" class="kpi-value text-green-600">—</p>
+        </div>
+        <div class="kpi-card sentiment-neu">
+          <p class="kpi-label">Sentimen Netral</p>
+          <p id="kpiNeutral" class="kpi-value text-yellow-600">—</p>
+        </div>
+        <div class="kpi-card sentiment-neg">
+          <p class="kpi-label">Sentimen Negatif</p>
+          <p id="kpiNegative" class="kpi-value text-red-500">—</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== ROW 1: Sales Trend + Sentiment Pie ===== -->
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Sales Trend (spans 2 cols) -->
+      <div class="lg:col-span-2 chart-card">
+        <h2 class="chart-title">📈 Tren Nilai Transaksi Bulanan (Status: Delivered)</h2>
+        <p class="chart-desc">Total nilai transaksi dari pesanan berstatus Delivered, dikelompokkan per bulan berdasarkan tanggal pembelian.</p>
+        <div class="chart-container" style="height:260px">
+          <canvas id="chartSalesTrend"></canvas>
+        </div>
+      </div>
+      <!-- Sentiment Pie -->
+      <div class="chart-card">
+        <h2 class="chart-title">🎯 Distribusi Sentimen</h2>
+        <p class="chart-desc">Proporsi ulasan berdasarkan label sentimen yang tersedia dalam dataset.</p>
+        <div class="chart-container" style="height:260px">
+          <canvas id="chartSentimentPie"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== ROW 2: Product Revenue + Rating Bar ===== -->
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Product Revenue Bar -->
+      <div class="chart-card">
+        <h2 class="chart-title">🛒 Nilai Transaksi per Produk (Delivered)</h2>
+        <p class="chart-desc">Total nilai transaksi (total_amount_idr) untuk pesanan Delivered, per produk.</p>
+        <div class="chart-container" style="height:260px">
+          <canvas id="chartProductRevenue"></canvas>
+        </div>
+      </div>
+      <!-- Avg Rating per Product -->
+      <div class="chart-card">
+        <h2 class="chart-title">⭐ Rata-rata Rating per Produk</h2>
+        <p class="chart-desc">Rata-rata rating dari semua ulasan yang sesuai filter, per produk.</p>
+        <div class="chart-container" style="height:260px">
+          <canvas id="chartProductRating"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== ROW 3: Topic Analysis + Region Sentiment ===== -->
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Top Review Topics -->
+      <div class="chart-card">
+        <h2 class="chart-title">💬 Topik Ulasan Terbanyak (Top 10)</h2>
+        <p class="chart-desc">Topik ulasan (review_topic) yang paling sering muncul dalam data yang difilter.</p>
+        <div class="chart-container" style="height:280px">
+          <canvas id="chartTopics"></canvas>
+        </div>
+      </div>
+      <!-- Region Sentiment Comparison -->
+      <div class="chart-card">
+        <h2 class="chart-title">🗺️ Sentimen per Wilayah</h2>
+        <p class="chart-desc">Jumlah ulasan Positif, Netral, dan Negatif untuk setiap wilayah pada data yang difilter.</p>
+        <div class="chart-container" style="height:280px">
+          <canvas id="chartRegionSentiment"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== ROW 4: Rating Distribution + Order Status ===== -->
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Rating Distribution -->
+      <div class="chart-card">
+        <h2 class="chart-title">📊 Distribusi Rating (1–5)</h2>
+        <p class="chart-desc">Jumlah ulasan berdasarkan nilai rating 1 sampai 5.</p>
+        <div class="chart-container" style="height:240px">
+          <canvas id="chartRatingDist"></canvas>
+        </div>
+      </div>
+      <!-- Order Status Donut -->
+      <div class="chart-card">
+        <h2 class="chart-title">📦 Distribusi Status Pesanan</h2>
+        <p class="chart-desc">Proporsi pesanan berdasarkan status: Delivered, Processing, Cancelled.</p>
+        <div class="chart-container" style="height:240px">
+          <canvas id="chartOrderStatus"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== INSIGHTS ===== -->
+    <section class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 sm:p-6">
+      <h2 class="section-title mb-3">💡 Insight &amp; Rekomendasi Bisnis</h2>
+      <p class="text-xs text-gray-400 mb-4">Insight berikut dihitung secara otomatis dari data yang aktif di filter saat ini.</p>
+      <div id="insightsContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+    </section>
+
+    <!-- ===== REVIEW EXPLORER ===== -->
+    <section class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 sm:p-6">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+        <h2 class="section-title">🔎 Eksplorasi Ulasan Pelanggan</h2>
+        <div class="flex items-center gap-2">
+          <label class="text-xs text-gray-500">Urutkan:</label>
+          <select id="sortReviews" class="filter-select text-xs py-1 w-auto">
+            <option value="date_desc">Terbaru</option>
+            <option value="date_asc">Terlama</option>
+            <option value="rating_desc">Rating ↓</option>
+            <option value="rating_asc">Rating ↑</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Review Table -->
+      <div class="overflow-x-auto">
+        <table class="w-full text-xs sm:text-sm border-collapse" id="reviewTable">
+          <thead>
+            <tr class="bg-gray-50 text-gray-500 text-left uppercase text-xs tracking-wide">
+              <th class="px-3 py-2 font-semibold">Produk</th>
+              <th class="px-3 py-2 font-semibold">Kategori</th>
+              <th class="px-3 py-2 font-semibold">Wilayah</th>
+              <th class="px-3 py-2 font-semibold">Rating</th>
+              <th class="px-3 py-2 font-semibold">Sentimen</th>
+              <th class="px-3 py-2 font-semibold">Topik</th>
+              <th class="px-3 py-2 font-semibold">Ulasan</th>
+              <th class="px-3 py-2 font-semibold">Tanggal</th>
+              <th class="px-3 py-2 font-semibold">Status</th>
+            </tr>
+          </thead>
+          <tbody id="reviewTableBody" class="divide-y divide-gray-100"></tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="flex items-center justify-between mt-4 flex-wrap gap-2">
+        <p class="text-xs text-gray-400" id="paginationInfo"></p>
+        <div class="flex gap-2">
+          <button id="btnPrevPage" class="pagination-btn">← Prev</button>
+          <span id="pageIndicator" class="text-xs text-gray-600 self-center px-2"></span>
+          <button id="btnNextPage" class="pagination-btn">Next →</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="text-center text-xs text-gray-400 py-6 mt-4 border-t border-gray-100">
+    Dashboard berbasis data sintetis untuk keperluan demonstrasi. Data tidak merepresentasikan pelanggan atau transaksi nyata.
+  </footer>
+
+  <!-- Main script -->
+  <script src="script.js"></script>
+</body>
+</html>
